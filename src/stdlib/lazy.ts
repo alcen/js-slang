@@ -1,5 +1,5 @@
-import { Value, Context } from "../types"
-import { evaluate } from "../interpreter"
+import { evaluate } from '../interpreter'
+import { Context, Value } from '../types'
 
 // Primitive Thunk type
 export interface Thunk {
@@ -18,10 +18,10 @@ export interface Thunk {
 export function makeThunk(value: Value, context: Context) {
   return {
     type: 'Thunk',
-    value: value,
+    value,
     toString: () => value + '',
     evaluated: false,
-    context: context
+    context
   }
 }
 
@@ -32,22 +32,22 @@ export function makeThunk(value: Value, context: Context) {
  * @param expression The expression to be evaluated.
  */
 export function force(thunk: Value) {
-    // console.log('THIS DOWN HERE IS THE ARG OF FORCE()!:\n')
-    // console.log(thunk)
-    // Check if thunk type object
-    if (thunk.type === 'Thunk') {
-        // console.log('FORCING A THUNK!!!')
-        return actualValue(thunk.value, thunk.context)
-    }
-    // console.log('WHY DID I GET HERE???')
-    return thunk
+  // console.log('THIS DOWN HERE IS THE ARG OF FORCE()!:\n')
+  // console.log(thunk)
+  // Check if thunk type object
+  if (thunk.type === 'Thunk') {
+    // console.log('FORCING A THUNK!!!')
+    return actualValue(thunk.value, thunk.context)
+  }
+  // console.log('WHY DID I GET HERE???')
+  return thunk
 }
 
 export function actualValue(expression: Value, context: Context) {
-    const iterator = evaluate(expression, context)
-    let result = iterator.next()
-    while (!result.done) {
-        result = iterator.next()
-    }
-    return result.value
+  const iterator = evaluate(expression, context)
+  let result = iterator.next()
+  while (!result.done) {
+    result = iterator.next()
+  }
+  return result.value
 }

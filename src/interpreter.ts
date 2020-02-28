@@ -4,7 +4,7 @@ import Closure from './closure'
 import * as constants from './constants'
 import * as errors from './interpreter-errors'
 import { checkEditorBreakpoints } from './stdlib/inspector'
-import { makeThunk, force } from './stdlib/lazy'
+import { force, makeThunk } from './stdlib/lazy'
 import { Context, Environment, Frame, Value } from './types'
 import { conditionalExpression, literal, primitive } from './utils/astCreator'
 import { evaluateBinaryExpression, evaluateUnaryExpression } from './utils/operators'
@@ -323,7 +323,7 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
     if (node.callee.type === 'MemberExpression') {
       thisContext = yield* evaluate(node.callee.object, context)
     }
-    if (callee.type === 'Thunk'){
+    if (callee.type === 'Thunk') {
       return yield* apply(context, callee.value, delayedArgs, node, thisContext)
     }
 
