@@ -8,6 +8,7 @@ import { Context, Environment, Frame, Value } from './types'
 import { conditionalExpression, literal, primitive } from './utils/astCreator'
 import { evaluateBinaryExpression, evaluateUnaryExpression } from './utils/operators'
 import * as rttc from './utils/rttc'
+import { Thunk, makeThunk } from './stdlib/lazy'
 
 class BreakValue {}
 
@@ -113,6 +114,7 @@ function defineVariable(context: Context, name: string, value: Value, constant =
     )
   }
 
+  // let thunk = makeThunk()
   Object.defineProperty(environment.head, name, {
     value,
     writable: !constant,
@@ -231,6 +233,7 @@ function* evaluateBlockSatement(context: Context, node: es.BlockStatement) {
   hoistFunctionsAndVariableDeclarationsIdentifiers(context, node)
   let result
   for (const statement of node.body) {
+    console.log('block statement: ' + statement.type)
     result = yield* evaluate(statement, context)
     if (
       result instanceof ReturnValue ||
@@ -243,6 +246,8 @@ function* evaluateBlockSatement(context: Context, node: es.BlockStatement) {
   }
   return result
 }
+
+
 
 /**
  * WARNING: Do not use object literal shorthands, e.g.
@@ -352,8 +357,10 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
     const declaration = node.declarations[0]
     const constant = node.kind === 'const'
     const id = declaration.id as es.Identifier
-    const value = yield* evaluate(declaration.init!, context)
-    defineVariable(context, id.name, value, constant)
+    // const value = yield* evaluate(declaration.init!, context)
+    // const thunk = () => value
+    // console.log(thunk)
+    defineVariable(context, id.name, declaration.init!, constant)
     return undefined
   },
 
@@ -493,6 +500,7 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
   },
 
   ExpressionStatement: function*(node: es.ExpressionStatement, context: Context) {
+    // console.log(node)
     return yield* evaluate(node.expression, context)
   },
 
@@ -573,6 +581,7 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
 
 export function* evaluate(node: es.Node, context: Context) {
   yield* visit(context, node)
+  console.log('from evaluate(): ' + node.type)
   const result = yield* evaluators[node.type](node, context)
   yield* leave(context)
   return result

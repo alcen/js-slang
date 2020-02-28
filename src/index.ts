@@ -180,65 +180,65 @@ export async function runInContext(
     await runInContext(prelude, context, options)
     return runInContext(code, context, options)
   }
-  if (isNativeRunnable) {
-    if (previousCode === code) {
-      JSSLANG_PROPERTIES.maxExecTime *= JSSLANG_PROPERTIES.factorToIncreaseBy
-    } else {
-      JSSLANG_PROPERTIES.maxExecTime = theOptions.originalMaxExecTime
-    }
-    previousCode = code
-    let transpiled
-    let sourceMapJson: RawSourceMap | undefined
-    let lastStatementSourceMapJson: RawSourceMap | undefined
-    try {
-      const temp = transpile(program, context.contextId)
-      // some issues with formatting and semicolons and tslint so no destructure
-      transpiled = temp.transpiled
-      sourceMapJson = temp.codeMap
-      lastStatementSourceMapJson = temp.evalMap
-      return Promise.resolve({
-        status: 'finished',
-        value: sandboxedEval(transpiled)
-      } as Result)
-    } catch (error) {
-      if (error instanceof RuntimeSourceError) {
-        context.errors.push(error)
-        return resolvedErrorPromise
-      }
-      if (error instanceof ExceptionError) {
-        // if we know the location of the error, just throw it
-        if (error.location.start.line !== -1) {
-          context.errors.push(error)
-          return resolvedErrorPromise
-        } else {
-          error = error.error // else we try to get the location from source map
-        }
-      }
-      const errorStack = error.stack
-      const match = /<anonymous>:(\d+):(\d+)/.exec(errorStack)
-      if (match === null) {
-        context.errors.push(new ExceptionError(error, UNKNOWN_LOCATION))
-        return resolvedErrorPromise
-      }
-      const line = Number(match![1])
-      const column = Number(match![2])
-      return SourceMapConsumer.with(
-        line === 1 ? lastStatementSourceMapJson! : sourceMapJson!,
-        null,
-        consumer => {
-          const { line: originalLine, column: originalColumn, name } = consumer.originalPositionFor(
-            {
-              line,
-              column
-            }
-          )
-          context.errors.push(
-            convertNativeErrorToSourceError(error, originalLine, originalColumn, name)
-          )
-          return resolvedErrorPromise
-        }
-      )
-    }
+  if (false) {
+    // if (previousCode === code) {
+    //   JSSLANG_PROPERTIES.maxExecTime *= JSSLANG_PROPERTIES.factorToIncreaseBy
+    // } else {
+    //   JSSLANG_PROPERTIES.maxExecTime = theOptions.originalMaxExecTime
+    // }
+    // previousCode = code
+    // let transpiled
+    // let sourceMapJson: RawSourceMap | undefined
+    // let lastStatementSourceMapJson: RawSourceMap | undefined
+    // try {
+    //   const temp = transpile(program, context.contextId)
+    //   // some issues with formatting and semicolons and tslint so no destructure
+    //   transpiled = temp.transpiled
+    //   sourceMapJson = temp.codeMap
+    //   lastStatementSourceMapJson = temp.evalMap
+    //   return Promise.resolve({
+    //     status: 'finished',
+    //     value: sandboxedEval(transpiled)
+    //   } as Result)
+    // } catch (error) {
+    //   if (error instanceof RuntimeSourceError) {
+    //     context.errors.push(error)
+    //     return resolvedErrorPromise
+    //   }
+    //   if (error instanceof ExceptionError) {
+    //     // if we know the location of the error, just throw it
+    //     if (error.location.start.line !== -1) {
+    //       context.errors.push(error)
+    //       return resolvedErrorPromise
+    //     } else {
+    //       error = error.error // else we try to get the location from source map
+    //     }
+    //   }
+    //   const errorStack = error.stack
+    //   const match = /<anonymous>:(\d+):(\d+)/.exec(errorStack)
+    //   if (match === null) {
+    //     context.errors.push(new ExceptionError(error, UNKNOWN_LOCATION))
+    //     return resolvedErrorPromise
+    //   }
+    //   const line = Number(match![1])
+    //   const column = Number(match![2])
+    //   return SourceMapConsumer.with(
+    //     line === 1 ? lastStatementSourceMapJson! : sourceMapJson!,
+    //     null,
+    //     consumer => {
+    //       const { line: originalLine, column: originalColumn, name } = consumer.originalPositionFor(
+    //         {
+    //           line,
+    //           column
+    //         }
+    //       )
+    //       context.errors.push(
+    //         convertNativeErrorToSourceError(error, originalLine, originalColumn, name)
+    //       )
+    //       return resolvedErrorPromise
+    //     }
+    //   )
+    // }
   } else {
     const it = evaluate(program, context)
     let scheduler: Scheduler
