@@ -115,7 +115,7 @@ function convertNativeErrorToSourceError(
   }
 }
 
-let previousCode = ''
+const previousCode = ''
 
 function determineExecutionMethod(theOptions: IOptions, context: Context, program: Program) {
   let isNativeRunnable

@@ -1,14 +1,14 @@
 // Primitive Thunk type
 export interface Thunk<T> {
-    // whether the Thunk has been peviously evaluated
-    evaluated: boolean
-    // the string representation of this Thunk
-    toString: () => string
-    // return type of this Thunk
-    type: string
-    // the lambda that holds the logic for evaluation
-    value: () => T
-  }
+  // whether the Thunk has been peviously evaluated
+  evaluated: boolean
+  // the string representation of this Thunk
+  toString: () => string
+  // return type of this Thunk
+  type: string
+  // the lambda that holds the logic for evaluation
+  value: () => T
+}
 
 /**
  * (NOT a primitive function in Lazy Source)
@@ -22,10 +22,10 @@ export interface Thunk<T> {
  * @param value The primitive value.
  */
 export function makeThunk<T>(value: T): Thunk<T> {
-    return {
-      type: typeof value,
-      value: () => value,
-      toString: () => value + '',
-      evaluated: false
-    }
+  return {
+    type: typeof value,
+    value: () => value,
+    toString: () => value + '',
+    evaluated: false
   }
+}

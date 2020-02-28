@@ -4,11 +4,11 @@ import Closure from './closure'
 import * as constants from './constants'
 import * as errors from './interpreter-errors'
 import { checkEditorBreakpoints } from './stdlib/inspector'
+import { makeThunk, Thunk } from './stdlib/lazy'
 import { Context, Environment, Frame, Value } from './types'
 import { conditionalExpression, literal, primitive } from './utils/astCreator'
 import { evaluateBinaryExpression, evaluateUnaryExpression } from './utils/operators'
 import * as rttc from './utils/rttc'
-import { Thunk, makeThunk } from './stdlib/lazy'
 
 class BreakValue {}
 
@@ -246,8 +246,6 @@ function* evaluateBlockSatement(context: Context, node: es.BlockStatement) {
   }
   return result
 }
-
-
 
 /**
  * WARNING: Do not use object literal shorthands, e.g.
