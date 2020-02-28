@@ -4,7 +4,7 @@ import Closure from './closure'
 import * as constants from './constants'
 import * as errors from './interpreter-errors'
 import { checkEditorBreakpoints } from './stdlib/inspector'
-import { makeThunk, Thunk } from './stdlib/lazy'
+import { makeThunk, force } from './stdlib/lazy'
 import { Context, Environment, Frame, Value } from './types'
 import { conditionalExpression, literal, primitive } from './utils/astCreator'
 import { evaluateBinaryExpression, evaluateUnaryExpression } from './utils/operators'
@@ -114,9 +114,9 @@ function defineVariable(context: Context, name: string, value: Value, constant =
     )
   }
 
-  // let thunk = makeThunk()
+  const thunk = makeThunk(value, context)
   Object.defineProperty(environment.head, name, {
-    value,
+    value: thunk,
     writable: !constant,
     enumerable: true
   })
@@ -208,6 +208,23 @@ function* getArgs(context: Context, call: es.CallExpression) {
   return args
 }
 
+function getDelayedArgs(context: Context, call: es.CallExpression) {
+  const args = []
+  for (const arg of call.arguments) {
+    if (arg.type !== 'Literal') {
+      const iterator = evaluate(arg, context)
+      let result = iterator.next()
+      while (!result.done) {
+        result = iterator.next()
+      }
+      args.push(result.value)
+    } else {
+      args.push(makeThunk(arg, context))
+    }
+  }
+  return args
+}
+
 function transformLogicalExpression(node: es.LogicalExpression): es.ConditionalExpression {
   if (node.operator === '&&') {
     return conditionalExpression(node.left, node.right, literal(false), node.loc!)
@@ -233,7 +250,7 @@ function* evaluateBlockSatement(context: Context, node: es.BlockStatement) {
   hoistFunctionsAndVariableDeclarationsIdentifiers(context, node)
   let result
   for (const statement of node.body) {
-    console.log('block statement: ' + statement.type)
+    // console.log('block statement: ' + statement.type)
     result = yield* evaluate(statement, context)
     if (
       result instanceof ReturnValue ||
@@ -297,12 +314,21 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
   CallExpression: function*(node: es.CallExpression, context: Context) {
     const callee = yield* evaluate(node.callee, context)
     const args = yield* getArgs(context, node)
+
+    const delayedArgs = getDelayedArgs(context, node)
+    // console.log(delayedArgs)
+
     let thisContext
+
     if (node.callee.type === 'MemberExpression') {
       thisContext = yield* evaluate(node.callee.object, context)
     }
-    const result = yield* apply(context, callee, args, node, thisContext)
-    return result
+    if (callee.type === 'Thunk'){
+      return yield* apply(context, callee.value, delayedArgs, node, thisContext)
+    }
+
+    // For force()
+    return yield* apply(context, callee, delayedArgs, node, thisContext)
   },
 
   NewExpression: function*(node: es.NewExpression, context: Context) {
@@ -333,8 +359,9 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
   },
 
   BinaryExpression: function*(node: es.BinaryExpression, context: Context) {
-    const left = yield* evaluate(node.left, context)
-    const right = yield* evaluate(node.right, context)
+    // Operands are needed, force its value from thunks
+    const left = force(yield* evaluate(node.left, context))
+    const right = force(yield* evaluate(node.right, context))
 
     const error = rttc.checkBinaryExpression(node, node.operator, left, right)
     if (error) {
@@ -355,9 +382,10 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
     const declaration = node.declarations[0]
     const constant = node.kind === 'const'
     const id = declaration.id as es.Identifier
+
+    // Commented the line below so the right hand side of the variable assignment is not evaluated
     // const value = yield* evaluate(declaration.init!, context)
-    // const thunk = () => value
-    // console.log(thunk)
+
     defineVariable(context, id.name, declaration.init!, constant)
     return undefined
   },
@@ -498,7 +526,6 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
   },
 
   ExpressionStatement: function*(node: es.ExpressionStatement, context: Context) {
-    // console.log(node)
     return yield* evaluate(node.expression, context)
   },
 
@@ -579,7 +606,7 @@ export const evaluators: { [nodeType: string]: Evaluator<es.Node> } = {
 
 export function* evaluate(node: es.Node, context: Context) {
   yield* visit(context, node)
-  console.log('from evaluate(): ' + node.type)
+  // console.log('from evaluate(): ' + node.type)
   const result = yield* evaluators[node.type](node, context)
   yield* leave(context)
   return result

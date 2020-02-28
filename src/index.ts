@@ -240,6 +240,7 @@ export async function runInContext(
     //   )
     // }
   } else {
+    // console.log(program)
     const it = evaluate(program, context)
     let scheduler: Scheduler
     if (theOptions.scheduler === 'async') {

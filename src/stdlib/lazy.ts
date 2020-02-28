@@ -1,5 +1,8 @@
+import { Value, Context } from "../types"
+import { evaluate } from "../interpreter"
+
 // Primitive Thunk type
-export interface Thunk<T> {
+export interface Thunk {
   // whether the Thunk has been peviously evaluated
   evaluated: boolean
   // the string representation of this Thunk
@@ -7,25 +10,44 @@ export interface Thunk<T> {
   // return type of this Thunk
   type: string
   // the lambda that holds the logic for evaluation
-  value: () => T
+  value: Value
+  // the context in which the thunk is constructed
+  context: Context
+}
+
+export function makeThunk(value: Value, context: Context) {
+  return {
+    type: 'Thunk',
+    value: value,
+    toString: () => value + '',
+    evaluated: false,
+    context: context
+  }
 }
 
 /**
- * (NOT a primitive function in Lazy Source)
- * Makes a primitive value into a Thunk. Should not
- * be used on Thunks! Part of the abstraction for
- * Thunks, to be used in the interpreter. Note that
- * this function is only to be used for primitive
- * values, hence the "evaluated" property is set to
- * "true", and no attempt will be made to memoize
- * the inner value of the Thunk.
- * @param value The primitive value.
+ * Primitive function in Lazy Source.
+ * Forces an expression to be evaluated until
+ * a result is obtained.
+ * @param expression The expression to be evaluated.
  */
-export function makeThunk<T>(value: T): Thunk<T> {
-  return {
-    type: typeof value,
-    value: () => value,
-    toString: () => value + '',
-    evaluated: false
-  }
+export function force(thunk: Value) {
+    // console.log('THIS DOWN HERE IS THE ARG OF FORCE()!:\n')
+    // console.log(thunk)
+    // Check if thunk type object
+    if (thunk.type === 'Thunk') {
+        // console.log('FORCING A THUNK!!!')
+        return actualValue(thunk.value, thunk.context)
+    }
+    // console.log('WHY DID I GET HERE???')
+    return thunk
+}
+
+export function actualValue(expression: Value, context: Context) {
+    const iterator = evaluate(expression, context)
+    let result = iterator.next()
+    while (!result.done) {
+        result = iterator.next()
+    }
+    return result.value
 }
